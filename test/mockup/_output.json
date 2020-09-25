@@ -1,0 +1,34 @@
+{
+    "DEEP": {
+        "ONE": "uno",
+        "Two": {
+            "three": "3",
+            "Four": "voor"
+        },
+        "FiVe": "vijf"
+    },
+    "shallow": {
+        "ONE": "uno",
+        "Two": "two",
+        "three": "3",
+        "Four": "voor",
+        "FiVe": "vijf"
+    },
+    "deep": {
+        "SHALLOW": {
+            "ONE": "uno",
+            "Two": "two",
+            "three": "3",
+            "Four": "voor",
+            "FiVe": "vijf"
+        },
+        "deep": {
+            "ONE": "uno",
+            "Two": {
+                "three": "3",
+                "Four": "voor"
+            },
+            "FiVe": "vijf"
+        }
+    }
+}
