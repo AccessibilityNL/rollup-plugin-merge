@@ -47,7 +47,7 @@ const getWrapStart = input => {
   }, 0);
 };
 
-module.exports = async ({
+module.exports = ({
   dryrun = false,
   input,
   output,
@@ -55,13 +55,7 @@ module.exports = async ({
   verbose = false,
   recursive = false
 }) => {
-  const paths = await globby(input);
-
-  paths.forEach((item, i) => {
-    if (item === output) {
-      paths.splice(i,1);
-    }
-  });
+  let watchPaths = [];
 
   const run = async () => {
     if (!Array.isArray(input)) {
@@ -69,6 +63,16 @@ module.exports = async ({
     }
 
     try {
+      const paths = await globby(input);
+
+      paths.forEach((item, i) => {
+        if (item === output) {
+          paths.splice(i,1);
+        }
+      });
+
+      watchPaths = paths;
+
       const files = await Promise.all(paths.map(i => readFileAsync(i)));
 
       const mergeFn = recursive ? merge.recursive : merge;
@@ -145,7 +149,7 @@ module.exports = async ({
 
         if (watch) {
           chokidar
-            .watch(paths)
+            .watch(watchPaths)
             .on('add', run)
             .on('change', run)
             .on('unlink', run)
