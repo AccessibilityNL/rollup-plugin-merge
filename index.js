@@ -63,6 +63,13 @@ module.exports = ({
     try {
       const paths = await globby(input);
 
+      paths.forEach((item, i) => {
+        if (item === output) {
+          paths.splice(i,1);
+        }
+      });
+
+
       const files = await Promise.all(paths.map(i => readFileAsync(i)));
 
       const mergeFn = recursive ? merge.recursive : merge;

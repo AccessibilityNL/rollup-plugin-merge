@@ -60,6 +60,14 @@ const run = async config => {
 
   try {
     const paths = await globby(input);
+    console.log(paths);
+
+    paths.forEach((item, i) => {
+      if (item === output) {
+        console.log('remove', item);
+        paths.splice(i,1);
+      }
+    });
 
     console.log(paths);
 
@@ -138,13 +146,13 @@ const run = async config => {
 
 // console.log(getWrapDepth('a/b/c/d.json', 'a/**/*.json'));
 
-console.log(
-  JSON.stringify(wrapWithKeys({ shallow: 'prop' }, ['deep', 'file']), null, 4)
-);
+// console.log(
+//   JSON.stringify(wrapWithKeys({ shallow: 'prop' }, ['deep', 'file']), null, 4)
+// );
 
 run({
-  dryrun: false,
-  input: ['test/mockup/**/*.json', '!**/_*.json'],
+  dryrun: true,
+  input: ['test/mockup/**/*.json'],
   output: 'test/mockup/_output.json',
   recursive: true
 });
