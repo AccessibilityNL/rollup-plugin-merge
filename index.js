@@ -145,9 +145,7 @@ module.exports = async ({
 
         if (watch) {
           chokidar
-            .watch(paths, {
-              ignored: output
-            })
+            .watch(paths)
             .on('add', run)
             .on('change', run)
             .on('unlink', run)
