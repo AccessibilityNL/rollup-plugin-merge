@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const globby = require('globby');
 const { promisify } = require('util');
 const chokidar = require('chokidar');
 const merge = require('merge');
@@ -26,15 +27,99 @@ const createDirIfNotExist = to => {
   });
 };
 
-module.exports = ({ input, output, watch = false, verbose = false, recursive = false }) => {
+const wrapWithKeys = (json, _pathSegments) => {
+  return _pathSegments.reverse().reduce((result, current) => {
+    return {
+      [current]: result
+    };
+  }, json);
+};
+
+const getWrapStart = input => {
+  const inputDirs = path.parse(input).dir.split(path.sep);
+
+  return inputDirs.reduce((result, dir) => {
+    if (dir.match(/\w+/g)) {
+      return result + 1;
+    }
+
+    return result;
+  }, 0);
+};
+
+module.exports = ({
+  dryrun = false,
+  input,
+  output,
+  watch = false,
+  verbose = false,
+  recursive = false
+}) => {
   const run = async () => {
+    if (!Array.isArray(input)) {
+      input = [input];
+    }
+
     try {
-      const files = await Promise.all(input.map(i => readFileAsync(i)));
+      const paths = await globby(input);
+
+      const files = await Promise.all(paths.map(i => readFileAsync(i)));
 
       const mergeFn = recursive ? merge.recursive : merge;
 
-      createDirIfNotExist(output);
-      await writeFileAsync(output, JSON.stringify(mergeFn(...files.map(i => JSON.parse(i))), null, '  '));
+      if (!dryrun) {
+        createDirIfNotExist(output);
+      }
+
+      if (dryrun) {
+        console.log(
+          '[MERGE][DRYRUN:OUTPUT]\n'.yellow,
+          JSON.stringify(
+            mergeFn(
+              ...files.map((i, index) => {
+                const currentPath = path.parse(paths[index]);
+                const wrapStart = getWrapStart(input[0]);
+                const wrapPath = [
+                  ...currentPath.dir.split(path.sep).slice(wrapStart),
+                  currentPath.name
+                ];
+
+                const parsedJSON = JSON.parse(i);
+                const wrappedJSON = wrapWithKeys(parsedJSON, wrapPath);
+
+                return wrappedJSON;
+              })
+            ),
+            null,
+            4
+          )
+        );
+      } else {
+        // parse json
+        // wrap json files in paths objects - input root
+        await writeFileAsync(
+          output,
+          JSON.stringify(
+            mergeFn(
+              ...files.map((i, index) => {
+                const currentPath = path.parse(paths[index]);
+                const wrapStart = getWrapStart(input[0]);
+                const wrapPath = [
+                  ...currentPath.dir.split(path.sep).slice(wrapStart),
+                  currentPath.name
+                ];
+
+                const parsedJSON = JSON.parse(i);
+                const wrappedJSON = wrapWithKeys(parsedJSON, wrapPath);
+
+                return wrappedJSON;
+              })
+            ),
+            null,
+            4
+          )
+        );
+      }
 
       if (verbose) {
         console.log('[MERGE][COMPLETE]'.yellow, output);
@@ -53,7 +138,8 @@ module.exports = ({ input, output, watch = false, verbose = false, recursive = f
         once = false;
 
         if (watch) {
-          chokidar.watch(input)
+          chokidar
+            .watch(input)
             .on('add', run)
             .on('change', run)
             .on('unlink', run)
